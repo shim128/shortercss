@@ -48,16 +48,29 @@ export const tagAttribute: RegExp = /(?<=\s)([^\s"'<>/=]+)(\s*=\s*)("[^"]*"|'[^'
 /** A same-document link, `#id` with or without quotes: `"#` is group 1, the id group 2. */
 export const fragmentLink: RegExp = /^(["']?#)(-?[_a-zA-Z][\w-]*)(?=["']?$)/;
 
-/** A single id passed to `.getElementById(` or assigned to `.id =`. */
-export const idList: RegExp = /\.(getElementById|id)\s*?[(|=]\s*?(["'])(-*_*[\w\s])+/g;
+// The JS expressions match up to the opening quote as `head` and the string contents as `value`.
+
+/** An id passed to `.getElementById(` or assigned to `.id` or `.htmlFor`. */
+export const idString: RegExp =
+  /(?<head>(?<!dataset)\.(?:getElementById\s*\(|(?:id|htmlFor)\s*=)\s*(?<quote>["']))(?<value>(?:\\.|(?!\k<quote>)[^\\\n])*)(?=\k<quote>)/g;
+
+/** Space-separated classes passed to `.getElementsByClassName(` or assigned to `.className` (`=` or `+=`). */
+export const classString: RegExp =
+  /(?<head>\.(?:getElementsByClassName\s*\(|className\s*\+?=)\s*(?<quote>["']))(?<value>(?:\\.|(?!\k<quote>)[^\\\n])*)(?=\k<quote>)/g;
+
+/** The arguments of `.classList.add/remove/toggle/contains/replace(`, as `args`. */
+export const classListCall: RegExp =
+  /(?<head>\.classList\.(?:add|remove|toggle|contains|replace)\s*\()(?<args>[^()]*)/g;
+
+/** A single- or double-quoted string literal: the quote is group 1, the contents group 2. */
+export const stringLiteral: RegExp = /(["'])((?:\\.|(?!\1)[^\\\n])*)\1/g;
+
+/** A selector string passed to `.querySelector(`, `.querySelectorAll(`, `.closest(` or `.matches(`. */
+export const selectorString: RegExp =
+  /(?<head>\.(?:querySelector(?:All)?|closest|matches)\s*\(\s*(?<quote>["']))(?<value>(?:\\.|(?!\k<quote>)[^\\\n])*)(?=\k<quote>)/g;
 
 /**
- * A class passed to `.getElementsByClassName(` or `.classList.add/remove/toggle(`, or assigned to
- * `.className =`.
+ * A class or id in a selector string: the sigil is group 1, the name group 2. Attribute selectors such
+ * as `[href$=".pdf"]` match as a whole, without groups, so that they can be skipped.
  */
-export const classList: RegExp =
-  /\.(getElementsByClassName|classList\.add|classList\.remove|classList\.toggle|className)\s*?[(|=]\s*?(["'])(-*_*[\w\s])+/g;
-
-/** The selector string passed to `.querySelector(` or `.querySelectorAll(`, and the selectors inside it. */
-export const querySelector: RegExp = /\.querySelector(All)?\s*?\(\s*?(["'])([#.]?-*_*[\w\s])+/g;
-export const prefixedSelector: RegExp = /[#.](-*_*[\w])+/g;
+export const prefixedSelector: RegExp = /\[[^\]]*\]|([.#])(-?[_a-zA-Z][\w-]*)/g;

@@ -120,7 +120,7 @@ describe("remove-unused", () => {
 });
 
 describe("js-strings", () => {
-  test.fails("#10 maps every selector in querySelector arguments", () => {
+  test("#10 maps every selector in querySelector arguments", () => {
     const { cl, il } = fresh();
     expect(jsStrings('document.querySelector(".nav > .item")', cl, il)).toBe('document.querySelector(".a > .b")');
     expect(jsStrings('document.querySelectorAll("#an-id > .class-name")', cl, il)).toBe(
@@ -128,17 +128,33 @@ describe("js-strings", () => {
     );
   });
 
-  test.fails("#10 maps every argument of classList methods", () => {
+  test("#10 maps every argument of classList methods", () => {
     const { cl, il } = fresh();
     expect(jsStrings('el.classList.add("one", "two")', cl, il)).toBe('el.classList.add("a", "b")');
   });
 
-  test.fails("#13 splits space-separated class lists", () => {
+  test("#13 splits space-separated class lists", () => {
     const { cl, il } = fresh();
     expect(jsStrings('el.className = "card active"', cl, il)).toBe('el.className = "a b"');
     expect(jsStrings('document.getElementsByClassName("card active")', cl, il)).toBe(
       'document.getElementsByClassName("a b")',
     );
+  });
+
+  test.each([
+    ["label.htmlFor = \"email\"; input.id = 'email'", "label.htmlFor = \"a\"; input.id = 'a'"],
+    ['el.dataset.id = "user-42"; if (el.id === "main") {}', 'el.dataset.id = "user-42"; if (el.id === "main") {}'],
+    ['el.closest(".card"); el.matches("#main .item")', 'el.closest(".a"); el.matches("#a .b")'],
+    ["document.querySelector('[data-file=\".pdf\"] .item')", "document.querySelector('[data-file=\".pdf\"] .a')"],
+    [
+      'el.classList.toggle("open", force); el.classList.replace("open", "closed")',
+      'el.classList.toggle("a", force); el.classList.replace("a", "b")',
+    ],
+    ['el.className += " active"', 'el.className += " a"'],
+    ["el.className = `card ${state}`", "el.className = `card ${state}`"],
+  ])("#10 maps selector strings: %s", (input, output) => {
+    const { cl, il } = fresh();
+    expect(jsStrings(input, cl, il)).toBe(output);
   });
 });
 
