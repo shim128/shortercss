@@ -1,36 +1,49 @@
-import expressions from "../utils/expressions";
-import { LibraryInstance } from "../utils/library";
+import type { Processor } from "../config.ts";
+import type { LibraryInstance } from "../utils/library.ts";
+import {
+  classListCall,
+  classString,
+  idString,
+  prefixedSelector,
+  selectorName,
+  selectorString,
+  stringLiteral,
+} from "../utils/expressions.ts";
+
+function mapNames(value: string, library: LibraryInstance): string {
+  return value.replace(selectorName, (name) => library.use(name));
+}
 
 /**
- * Dumb search for all strings in all JS files. This will only work on libraries which are fully built.
- * @param {file String}
- * @returns {reducedFile String}
+ * Dumb search for selector strings passed to DOM methods and properties. This only works on libraries
+ * which are fully built, and doesn't follow names built at runtime (concatenation, template literals).
  */
-export default function(file: string, classLibrary: LibraryInstance, idLibrary: LibraryInstance): string {
-  // replacing selectors in js methods that take a singl id ie. getElementById
-  file = file.replace(expressions.idList, function(exp) {
-    const indexOfQuote = exp.search(/["']/g) + 1;
-    const selector = exp.slice(indexOfQuote);
-    return exp.slice(0, indexOfQuote) + idLibrary.get(selector);
-  });
+const jsStrings: Processor = (file, classLibrary, idLibrary) =>
+  file
+    // ids, e.g. getElementById("main"), el.id = "main"
+    .replace(idString, (_, head: string, _quote: string, value: string) => head + mapNames(value, idLibrary))
+    // space-separated classes, e.g. getElementsByClassName("card active"), el.className = "card"
+    .replace(classString, (_, head: string, _quote: string, value: string) => head + mapNames(value, classLibrary))
+    // every string argument, e.g. classList.add("card", "active"), classList.toggle("open", force)
+    .replace(
+      classListCall,
+      (_, head: string, args: string) =>
+        head +
+        args.replace(
+          stringLiteral,
+          (_literal, quote: string, value: string) => quote + mapNames(value, classLibrary) + quote,
+        ),
+    )
+    // prefixed ids and classes, e.g. querySelector(".nav > .item"), closest("#main")
+    .replace(
+      selectorString,
+      (_, head: string, _quote: string, value: string) =>
+        head +
+        value.replace(prefixedSelector, (selector, sigil: string | undefined, name: string | undefined) =>
+          sigil === undefined || name === undefined
+            ? selector
+            : sigil + (sigil === "#" ? idLibrary : classLibrary).use(name),
+        ),
+    );
 
-  // replacing selectors in js methods take in a single classe ie. getElementsByClassName or classList.add
-  file = file.replace(expressions.classList, function(exp) {
-    const indexOfQuote = exp.search(/["']/g) + 1;
-    const selector = exp.slice(indexOfQuote);
-    return exp.slice(0, indexOfQuote) + classLibrary.get(selector);
-  });
-
-  // replacing selectors in methods that take in both id and classes with prefixes
-  file = file.replace(/\.querySelector(All)?\s*?\(\s*?(["'])([#.]?-*_*[\w\s])+/g, function(code) {
-    const indexOfQuote = code.search(/["']/g) + 1;
-    const selectors = code.slice(indexOfQuote).replace(/[#.](-*_*[\w])+/g, function(selector) {
-      if (selector[0] === "#") return "#" + idLibrary.get(selector.slice(1));
-      if (selector[0] === ".") return "." + classLibrary.get(selector.slice(1));
-      return selector;
-    });
-    return code.slice(0, indexOfQuote) + selectors;
-  });
-
-  return file;
-}
+export default jsStrings;

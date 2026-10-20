@@ -1,33 +1,54 @@
-import expressions from "../utils/expressions";
-import { LibraryInstance } from "../utils/library";
-import jsStrings from "./js-strings";
-import cssStrings from "./css";
+import type { Processor } from "../config.ts";
+import { fragmentLink, scriptBody, selectorName, startTag, styleBody, tagAttribute } from "../utils/expressions.ts";
+import { mask } from "../utils/mask.ts";
+import css from "./css.ts";
+import jsStrings from "./js-strings.ts";
+
+/** Attributes whose values are class names, id references, or a same-document `#id` link. */
+const attributeTargets = new Map<string, "class" | "id" | "fragment">([
+  ["class", "class"],
+  ["id", "id"],
+  ["for", "id"],
+  ["form", "id"],
+  ["list", "id"],
+  ["headers", "id"],
+  ["popovertarget", "id"],
+  ["commandfor", "id"],
+  ["aria-activedescendant", "id"],
+  ["aria-controls", "id"],
+  ["aria-describedby", "id"],
+  ["aria-details", "id"],
+  ["aria-errormessage", "id"],
+  ["aria-flowto", "id"],
+  ["aria-labelledby", "id"],
+  ["aria-owns", "id"],
+  ["href", "fragment"],
+  ["xlink:href", "fragment"],
+]);
+
 /**
- * Replaces all class and id attributes found in the library. Only tested on *.html files with
- * classes declared in *class= attributes.
- *
- * @param {string} File
- * @returns {string} Minified file
+ * Runs every inline script and style through the jsStrings and css processors, then replaces class names
+ * and id references in the attributes of the remaining markup.
  */
-export default function(file: string, classLibrary: LibraryInstance, idLibrary: LibraryInstance): string {
-  // going through internal css
-  file = file.replace(/<script>([\s\S]*?)<\/script>/im, function(code) {
-    return jsStrings(code, classLibrary, idLibrary);
-  });
-  // going through internal css
-  file = file.replace(/<style>([\s\S]*?)<\/style>/im, function(code) {
-    return cssStrings(code, classLibrary, idLibrary);
-  });
-  // finally raplacint ids, classes, fors and aria labels
-  return file.replace(expressions.elementAttribute, function(attributes) {
-    const attribute = attributes.split("=");
-    return (
-      attribute[0] +
-      "=" +
-      attribute[1].replace(expressions.selectorName, function(selectorName) {
-        if (/(id|for)/.test(attribute[0])) return idLibrary.get(selectorName);
-        return classLibrary.get(selectorName);
-      })
-    );
-  });
-}
+const html: Processor = (file, classLibrary, idLibrary) => {
+  // Masked so that the attribute pass can't match inside them, e.g. `el.id = "foo"` in a script.
+  const scripts = mask(file, scriptBody, ([body]) => jsStrings(body, classLibrary, idLibrary));
+  const styles = mask(scripts.text, styleBody, ([body]) => css(body, classLibrary, idLibrary));
+  const markup = styles.text.replace(startTag, (tag) =>
+    tag.replace(tagAttribute, (attribute, name: string, assign: string, value: string) => {
+      switch (attributeTargets.get(name.toLowerCase())) {
+        case "class":
+          return name + assign + value.replace(selectorName, (selector) => classLibrary.use(selector));
+        case "id":
+          return name + assign + value.replace(selectorName, (selector) => idLibrary.use(selector));
+        case "fragment":
+          return name + assign + value.replace(fragmentLink, (_, hash: string, id: string) => hash + idLibrary.use(id));
+        default:
+          return attribute;
+      }
+    }),
+  );
+  return scripts.unmask(styles.unmask(markup));
+};
+
+export default html;

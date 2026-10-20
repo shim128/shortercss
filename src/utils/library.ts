@@ -1,108 +1,96 @@
-import { map, filter } from "lodash";
-import generateShortname from "./generate-shortname";
-import multimatch from "multimatch";
-/**
- * This handy function returns an empty library. This should be a module on its own so that the
- * logic of retrieving a library does not get mixed up with the library logic itself.
- * @returns {object} Library
- * @constructor
- */
-type LibraryType = {
-  [key: string]: {
-    shortname: string;
-    hits: number;
-  };
-};
-export interface LibraryInstance {
-  _library: LibraryType;
-  _ignores: Array<string>;
-  size: number;
-  has(name: string): boolean;
-  get(name: string, dontCount?: boolean): string;
-  getAll(): Array<string>;
-  getUnused(): Array<string>;
-  getSize(): number;
-  getFullNames(): Array<string>;
-  stats(): { size: number; unused: number };
+import { generateShortname } from "./generate-shortname.ts";
+import { compileIgnores, type IgnorePattern } from "./ignore-matcher.ts";
+
+interface Entry {
+  shortname: string;
+  hits: number;
 }
 
-export default class Library implements LibraryInstance {
-  _library: LibraryType = {};
-  _ignores: Array<string>;
-  size = 0;
-  constructor(ignores: Array<string>) {
-    this._ignores = ignores;
+/** Shortnames that ad blockers' generic cosmetic filters hide (`.ad`, `.ads`, …), so never generated. */
+const reserved: ReadonlySet<string> = new Set(["ad", "ads", "adv"]);
+
+/**
+ * Maps full selector names to shortnames and counts how often each name is used outside stylesheets.
+ * One library holds classes, another ids; share them across every file of a build.
+ */
+export class Library {
+  readonly #entries = new Map<string, Entry>();
+  readonly #isIgnored: (name: string) => boolean;
+  #seed = 0;
+
+  constructor(ignores: readonly IgnorePattern[] = []) {
+    this.#isIgnored = compileIgnores(ignores);
   }
 
-  /** Tests if a value exists in the library. @params {string} name; @returns {boolean} if it exists */
+  /** Whether `name` already has a shortname. */
   has(name: string): boolean {
-    return this._library[name] !== undefined;
+    return this.#entries.has(name);
   }
 
-  /**
-   * Ensures the name is set and returns it. If generates an ignored name,
-   * will increase size and try again
-   * @param name String name to get shortname for from the library
-   * @param dontCount Bool to not to count this as a use in the code
-   * @returns {string} Shortname of the minified name
-   */
-  get(name: string, dontCount: boolean = false): string {
-    // catch all for ignoring IDs
-    // if (this._ignores === true) return name;
+  /** Shortname for a selector defined in a stylesheet. Doesn't count as a use. */
+  declare(name: string): string {
+    return this.#lookup(name, false);
+  }
 
-    let shortname;
+  /** Shortname for a selector referenced from markup or scripts. Counts as a use. */
+  use(name: string): string {
+    return this.#lookup(name, true);
+  }
 
-    if (this._library[name]) {
-      shortname = this._library[name].shortname;
-      if (!dontCount) {
-        this._library[name].hits++;
-      }
-    } else if (!multimatch(name, this._ignores).length) {
-      do {
-        shortname = generateShortname(this.size);
-        this.size++;
-      } while (~this._ignores.indexOf(shortname));
+  /** @deprecated Use {@link Library.declare} for `dontCount = true`, {@link Library.use} otherwise. */
+  get(name: string, dontCount = false): string {
+    return dontCount ? this.declare(name) : this.use(name);
+  }
 
-      this._library[name] = {
-        shortname: shortname,
-        hits: dontCount ? 0 : 1,
-      };
-    } else {
-      shortname = name;
+  /** All shortnames, in the order they were assigned. */
+  getAll(): string[] {
+    return Array.from(this.#entries.values(), (entry) => entry.shortname);
+  }
+
+  /** Shortnames that were declared but never used. */
+  getUnused(): string[] {
+    return Array.from(this.#entries.values())
+      .filter((entry) => entry.hits === 0)
+      .map((entry) => entry.shortname);
+  }
+
+  /** Number of entries in the library. */
+  getSize(): number {
+    return this.#entries.size;
+  }
+
+  get size(): number {
+    return this.getSize();
+  }
+
+  /** All full selector names, in the order they were added. */
+  getFullNames(): string[] {
+    return Array.from(this.#entries.keys());
+  }
+
+  stats(): { size: number; unused: number } {
+    return { size: this.getSize(), unused: this.getUnused().length };
+  }
+
+  #lookup(name: string, counts: boolean): string {
+    const entry = this.#entries.get(name);
+    if (entry) {
+      if (counts) entry.hits++;
+      return entry.shortname;
     }
+    if (this.#isIgnored(name)) return name;
 
+    // A shortname that an ignore pattern matches could collide with a kept name, e.g. "ab" for `a*`.
+    let shortname: string;
+    do shortname = generateShortname(this.#seed++);
+    while (reserved.has(shortname) || this.#isIgnored(shortname));
+    this.#entries.set(name, { shortname, hits: counts ? 1 : 0 });
     return shortname;
   }
-
-  /** @returns {array} Of all shortnames in the library. Does not count towards usage. */
-  getAll(): Array<string> {
-    return map(this._library, "shortname");
-  }
-
-  /** Retrieves shortnames which are not used in the code processed. @returns {array} Of unused names */
-  getUnused(): Array<string> {
-    return map(
-      filter(this._library, ({ hits }) => {
-        return hits === 0;
-      }),
-      "shortname"
-    );
-  }
-
-  /** @returns {number} Number of entries in the library */
-  getSize(): number {
-    return this.size;
-  }
-
-  /** @returns {Array} All full selector names which have been entered so far */
-  getFullNames(): Array<string> {
-    return Object.keys(this._library);
-  }
-
-  stats() {
-    return {
-      size: this.getSize(),
-      unused: this.getUnused().length,
-    };
-  }
 }
+
+/** The public surface of {@link Library}, for typing processors. */
+export type LibraryInstance = Pick<
+  Library,
+  "has" | "declare" | "use" | "get" | "getAll" | "getUnused" | "getSize" | "size" | "getFullNames" | "stats"
+>;

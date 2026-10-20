@@ -1,24 +1,28 @@
 {
+  // Type-check only: `vp pack` builds (Oxc) and emits declarations from these sources.
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "module": "commonjs",
+    // Node 22 is the oldest supported runtime: no ES2025 APIs until it reaches end of life.
+    "target": "es2024",
+    "lib": ["es2024"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
     "strict": true,
-    "noImplicitAny": false,
-    "noImplicitThis": true,
-    "preserveConstEnums": true,
-    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
     "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "moduleResolution": "node",
-    "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true,
-    "removeComments": true,
-    "sourceMap": false,
-    "target": "ES6"
+
+    "verbatimModuleSyntax": true,
+    "isolatedDeclarations": true,
+    "declaration": true,
+    "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "skipLibCheck": true
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules"],
-  "types": ["@types/node", "@types/lodash"]
+  "include": ["src", "test", "vite.config.ts"]
 }

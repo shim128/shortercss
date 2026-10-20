@@ -1,63 +1,63 @@
 {
   "name": "shortercss",
-  "description": "An Open Source Solution for shortening/obfuscating CSS selectors",
   "version": "2.1.2",
-  "main": "./dist/index.js",
-  "types": "index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "gulp": "gulp --gulpfile ./test/example/gulpfile.js",
-    "run": "npm run build && npm run gulp",
-    "test": "vows --spec",
-    "coverage": "istanbul cover ./node_modules/vows/bin/vows --spec",
-    "codeclimate": "cat ./coverage/lcov.info | codeclimate",
-    "test-report": "npm run coverage && npm run codeclimate",
-    "release": "standard-version"
-  },
-  "dependencies": {
-    "app-root-path": "^3.0.0",
-    "lodash": "~2.4.1",
-    "multimatch": "^1.0.1"
-  },
-  "devDependencies": {
-    "@types/lodash": "^4.14.168",
-    "@types/node": "^14.14.22",
-    "@typescript-eslint/eslint-plugin": "^4.14.0",
-    "@typescript-eslint/parser": "^4.14.0",
-    "codeclimate-test-reporter": "^0.5.1",
-    "eslint": "^7.18.0",
-    "eslint-config-standard": "^16.0.2",
-    "eslint-plugin-import": "^2.22.1",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "gulp": "^4.0.2",
-    "istanbul": "^0.4.5",
-    "jscoverage": "^0.6.0",
-    "standard-version": "^9.1.0",
-    "typescript": "^4.1.3",
-    "vows": "^0.8.3"
-  },
+  "description": "An Open Source Solution for shortening/obfuscating CSS selectors",
+  "keywords": [
+    "class-names",
+    "compress",
+    "css",
+    "minify",
+    "obfuscate",
+    "selectors",
+    "styles"
+  ],
+  "homepage": "https://github.com/shim128/shortercss",
+  "bugs": "https://github.com/shim128/shortercss/issues",
+  "license": "MIT",
   "author": {
     "name": "Matb85"
   },
-  "homepage": "https://github.com/Matb85/shortercss",
-  "bugs": "https://github.com/Matb85/shortercss/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Matb85/shortercss.git"
+    "url": "git+https://github.com/shim128/shortercss.git"
   },
-  "keywords": [
-    "gulp",
-    "gulpplugin",
-    "munch",
-    "minify",
-    "css",
-    "selectors",
-    "terse",
-    "terser",
-    "styles",
-    "compress"
+  "files": [
+    "dist"
   ],
-  "license": "MIT",
-  "readmeFilename": "README.md"
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./processors/*": {
+      "types": "./dist/processors/*.d.ts",
+      "default": "./dist/processors/*.js"
+    },
+    "./dist/processors/*": "./dist/processors/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "check": "vp check",
+    "typecheck": "tsc --noEmit",
+    "test": "vp test",
+    "coverage": "vp test --coverage",
+    "release": "commit-and-tag-version",
+    "prepack": "vp pack",
+    "test:dist": "node test/compat/smoke.cjs && node test/compat/smoke.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "5.0.5",
+    "commit-and-tag-version": "^13.3.0",
+    "publint": "^0.3.25",
+    "typescript": "^7.0.2",
+    "vite-plus": "1.3.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "packageManager": "pnpm@12.14.0"
 }

@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      .inline-style {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-header inline-style">
+      <a class="nav-link" href="/">Home</a>
+    </header>
+    <main id="main-content">
+      <div class="card">
+        <label for="email-input">Email</label>
+        <input id="email-input" class="input-field">
+      </div>
+      <button class="btn-primary" id="submit-btn">Send</button>
+    </main>
+    <script>
+      document.getElementById("submit-btn").addEventListener("click", () => {
+        document.querySelector(".card").classList.add("is-active");
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+peerDependencyRules:
+  allowedVersions:
+    # vite-plus aliases `vite` to @voidzero-dev/vite-plus-core, whose own version (1.x) is outside vitest's peer range.
+    vitest>vite: "1"
+    "@vitest/mocker>vite": "1"
