@@ -1,0 +1,30 @@
+/* Layout */
+.a {
+  display: flex;
+  padding: 0 1rem;
+}
+
+.a .b,
+.a .b:hover {
+  color: #333;
+}
+
+#a > .c {
+  margin: 1.5rem auto;
+  background: #fff;
+}
+
+.c.d {
+  border-color: #0af;
+}
+
+.e {
+  color: white;
+}
+
+
+@media (min-width: 768px) {
+  .a {
+    padding: 0 2rem;
+  }
+}

@@ -1,0 +1,33 @@
+/* Layout */
+.page-header {
+  display: flex;
+  padding: 0 1rem;
+}
+
+.page-header .nav-link,
+.page-header .nav-link:hover {
+  color: #333;
+}
+
+#main-content > .card {
+  margin: 1.5rem auto;
+  background: #fff;
+}
+
+.card.is-active {
+  border-color: #0af;
+}
+
+.btn-primary {
+  color: white;
+}
+
+.unused-rule {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .page-header {
+    padding: 0 2rem;
+  }
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      .g {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="a g">
+      <a class="b" href="/">Home</a>
+    </header>
+    <main id="a">
+      <div class="c">
+        <label for="c">Email</label>
+        <input id="c" class="h">
+      </div>
+      <button class="e" id="b">Send</button>
+    </main>
+    <script>
+      document.getElementById("b").addEventListener("click", () => {
+        document.querySelector(".c").classList.add("d");
+      });
+    </script>
+  </body>
+</html>
