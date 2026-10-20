@@ -111,11 +111,29 @@ describe("library", () => {
 });
 
 describe("remove-unused", () => {
-  test.fails("#9 removes only the unused selector from a selector list", () => {
+  test("#9 removes only the unused selector from a selector list", () => {
     const { cl, il } = fresh();
     const out = css(".keep, .drop {margin:0}\n.drop2 {x:y}", cl, il);
     html('<div class="keep"></div>', cl, il);
     expect(removeUnused(out, cl, il).replace(/\s+/g, " ").trim()).toBe(".a {margin:0}");
+  });
+
+  // `keep`, `keep2` and `used` are used in markup; `drop` isn't.
+  test.each([
+    [".keep,\n.drop,\n.keep2 {\n  x: y;\n}", ".keep,\n.keep2 {\n  x: y;\n}"],
+    [".keep:not(.drop) {x:y} :is(.drop, .keep) {x:y}", ".keep:not(.drop) {x:y} :is(.drop, .keep) {x:y}"],
+    ["/* license */\n.drop {x:y}\n.keep {x:y}", "/* license */\n.keep {x:y}"],
+    [".used {\n  .drop {x:y}\n  &.keep {x:y}\n}", ".used {\n  &.keep {x:y}\n}"],
+    ['.drop[title="{"] {x:y}', ""],
+  ])("#9 keeps everything that can still match: %s", (input, output) => {
+    const { cl, il } = fresh();
+    const reduced = css(input, cl, il);
+    html('<div class="keep keep2 used"></div>', cl, il);
+    // compare in full names, so the expectations stay readable
+    const names = new Map(cl.getFullNames().map((name) => [cl.declare(name), name]));
+    expect(
+      removeUnused(reduced, cl, il).replace(/\.([a-z]+)\b/g, (_, short: string) => "." + (names.get(short) ?? short)),
+    ).toBe(output);
   });
 });
 
