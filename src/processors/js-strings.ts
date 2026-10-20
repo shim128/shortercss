@@ -1,36 +1,29 @@
-import expressions from "../utils/expressions";
-import { LibraryInstance } from "../utils/library";
+import type { Processor } from "../config.ts";
+import { classList, idList, prefixedSelector, querySelector } from "../utils/expressions.ts";
+
+/** Maps the part of `match` after its opening quote. */
+function afterQuote(match: string, map: (rest: string) => string): string {
+  const quote = match.search(/["']/) + 1;
+  return match.slice(0, quote) + map(match.slice(quote));
+}
 
 /**
- * Dumb search for all strings in all JS files. This will only work on libraries which are fully built.
- * @param {file String}
- * @returns {reducedFile String}
+ * Dumb search for selector strings passed to DOM methods. This only works on libraries which are fully
+ * built.
  */
-export default function(file: string, classLibrary: LibraryInstance, idLibrary: LibraryInstance): string {
-  // replacing selectors in js methods that take a singl id ie. getElementById
-  file = file.replace(expressions.idList, function(exp) {
-    const indexOfQuote = exp.search(/["']/g) + 1;
-    const selector = exp.slice(indexOfQuote);
-    return exp.slice(0, indexOfQuote) + idLibrary.get(selector);
-  });
+const jsStrings: Processor = (file, classLibrary, idLibrary) =>
+  file
+    // methods that take a single id, e.g. getElementById
+    .replace(idList, (match) => afterQuote(match, (name) => idLibrary.use(name)))
+    // methods that take a single class, e.g. getElementsByClassName or classList.add
+    .replace(classList, (match) => afterQuote(match, (name) => classLibrary.use(name)))
+    // methods that take prefixed ids and classes, e.g. querySelector
+    .replace(querySelector, (match) =>
+      afterQuote(match, (selectors) =>
+        selectors.replace(prefixedSelector, (selector) =>
+          selector.startsWith("#") ? "#" + idLibrary.use(selector.slice(1)) : "." + classLibrary.use(selector.slice(1)),
+        ),
+      ),
+    );
 
-  // replacing selectors in js methods take in a single classe ie. getElementsByClassName or classList.add
-  file = file.replace(expressions.classList, function(exp) {
-    const indexOfQuote = exp.search(/["']/g) + 1;
-    const selector = exp.slice(indexOfQuote);
-    return exp.slice(0, indexOfQuote) + classLibrary.get(selector);
-  });
-
-  // replacing selectors in methods that take in both id and classes with prefixes
-  file = file.replace(/\.querySelector(All)?\s*?\(\s*?(["'])([#.]?-*_*[\w\s])+/g, function(code) {
-    const indexOfQuote = code.search(/["']/g) + 1;
-    const selectors = code.slice(indexOfQuote).replace(/[#.](-*_*[\w])+/g, function(selector) {
-      if (selector[0] === "#") return "#" + idLibrary.get(selector.slice(1));
-      if (selector[0] === ".") return "." + classLibrary.get(selector.slice(1));
-      return selector;
-    });
-    return code.slice(0, indexOfQuote) + selectors;
-  });
-
-  return file;
-}
+export default jsStrings;

@@ -1,35 +1,13 @@
-import expressions from "../utils/expressions";
-import { LibraryInstance } from "../utils/library";
+import type { Processor } from "../config.ts";
+import { classSelector, idSelector, selectorName } from "../utils/expressions.ts";
 
 /**
- * Replaces all class names with shortnames. Also builds a library of shortnames which can be
- * used to reduce other file types.
- *
- * @param {string} File
- * @returns {string} Minified file
+ * Replaces class and id selectors with shortnames. Names are declared in the libraries without counting
+ * a use, so that other file types can be reduced with them and unused ones can be removed.
  */
-export default function(file: string, classLibrary: LibraryInstance, idLibrary: LibraryInstance): string {
-  const selectorNameMatch = expressions.selectorName;
+const css: Processor = (file, classLibrary, idLibrary) =>
+  file
+    .replace(classSelector, (selector) => selector.replace(selectorName, (name) => classLibrary.declare(name)))
+    .replace(idSelector, (selector) => selector.replace(selectorName, (name) => idLibrary.declare(name)));
 
-  file = file.replace(expressions.classSelector, function(selector) {
-    // exclude property values (matches ending in ')')
-    // if (selector[selector.length - 1] === ")") {
-    //   return selector;
-    // }
-    return selector.replace(selectorNameMatch, function(selectorName) {
-      return classLibrary.get(selectorName, true);
-    });
-  });
-
-  file = file.replace(expressions.idSelector, function(selector) {
-    // exclude property values (matches ending in '; or }')
-    // if (selector[selector.length - 1] === ";" || selector[selector.length - 1] === "}") {
-    //   return selector;
-    // }
-    return selector.replace(selectorNameMatch, function(selectorName) {
-      return idLibrary.get(selectorName, true);
-    });
-  });
-
-  return file;
-}
+export default css;

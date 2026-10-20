@@ -58,7 +58,7 @@ describe("config", () => {
   });
 
   test("throws when no config is given and none exists in the project root", () => {
-    expect(() => new ShorterCSS()).toThrow();
+    expect(() => new ShorterCSS()).toThrow(/shortercss\.config/);
   });
 
   test("ignored names are kept, including globs", () => {

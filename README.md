@@ -26,9 +26,7 @@ _You're like: `.some-super-descriptive-selector-name {...}`, and it's like: `.a 
 ```js
 // shortercss.config.js
 
-module.exports = {
-  /*config*/
-};
+module.exports = {/*config*/};
 ```
 
 3. create a ShorterCSS instace and run it on a string:
@@ -56,9 +54,7 @@ const Instance = new ShorterCSS("path/to/shortercss.config.js");
 - put your config as a function's argument:
 
 ```ts
-const Instance = new ShorterCSS({
-  /*config*/
-});
+const Instance = new ShorterCSS({/*config*/});
 ```
 
 ### Config

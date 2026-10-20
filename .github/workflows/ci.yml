@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        # vite-plus needs Node ^22.18 || ^24.11 || >=26 to build; the runtime minimum is tested below.
+        node: [22, 24, 26]
+        include:
+          - os: windows-latest
+            node: 24
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm typecheck
+      - run: pnpm coverage
+      - run: pnpm build
+      - run: pnpm test:dist
+      - if: matrix.os == 'ubuntu-latest' && matrix.node == 24
+        run: pnpm pack
+      - if: matrix.os == 'ubuntu-latest' && matrix.node == 24
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: shortercss-*.tgz
+
+  consumer:
+    name: consumer (Node ${{ matrix.node }})
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["22.12.0", 22, 24, 26]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: package
+      - name: Install the tarball into an empty project and run the smoke tests
+        run: |
+          mkdir consumer && cd consumer
+          npm init -y > /dev/null
+          npm install ../package/shortercss-*.tgz
+          cp ../test/compat/smoke.cjs ../test/compat/smoke.mjs .
+          node smoke.cjs
+          node smoke.mjs

@@ -15,7 +15,7 @@ const config: ViteUserConfig = defineConfig({
   },
   test: {
     include: ["test/**/*.test.ts"],
-    coverage: { provider: "v8", include: ["src/**"] },
+    coverage: { provider: "v8", include: ["src/**"], thresholds: { lines: 95, branches: 90 } },
   },
   lint: {
     plugins: ["typescript", "unicorn", "import", "node", "vitest"],

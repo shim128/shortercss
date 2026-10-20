@@ -1,33 +1,20 @@
-import expressions from "../utils/expressions";
-import { LibraryInstance } from "../utils/library";
-import jsStrings from "./js-strings";
-import cssStrings from "./css";
+import type { Processor } from "../config.ts";
+import { elementAttribute, selectorName } from "../utils/expressions.ts";
+import css from "./css.ts";
+import jsStrings from "./js-strings.ts";
+
 /**
- * Replaces all class and id attributes found in the library. Only tested on *.html files with
- * classes declared in *class= attributes.
- *
- * @param {string} File
- * @returns {string} Minified file
+ * Replaces class, id, for and aria-labelledby attribute values, after running the inline script and
+ * style through the jsStrings and css processors.
  */
-export default function(file: string, classLibrary: LibraryInstance, idLibrary: LibraryInstance): string {
-  // going through internal css
-  file = file.replace(/<script>([\s\S]*?)<\/script>/im, function(code) {
-    return jsStrings(code, classLibrary, idLibrary);
-  });
-  // going through internal css
-  file = file.replace(/<style>([\s\S]*?)<\/style>/im, function(code) {
-    return cssStrings(code, classLibrary, idLibrary);
-  });
-  // finally raplacint ids, classes, fors and aria labels
-  return file.replace(expressions.elementAttribute, function(attributes) {
-    const attribute = attributes.split("=");
-    return (
-      attribute[0] +
-      "=" +
-      attribute[1].replace(expressions.selectorName, function(selectorName) {
-        if (/(id|for)/.test(attribute[0])) return idLibrary.get(selectorName);
-        return classLibrary.get(selectorName);
-      })
-    );
-  });
-}
+const html: Processor = (file, classLibrary, idLibrary) =>
+  file
+    .replace(/<script>([\s\S]*?)<\/script>/im, (code) => jsStrings(code, classLibrary, idLibrary))
+    .replace(/<style>([\s\S]*?)<\/style>/im, (code) => css(code, classLibrary, idLibrary))
+    .replace(elementAttribute, (attribute) => {
+      const [name = "", value = ""] = attribute.split("=");
+      const library = /(id|for)/.test(name) ? idLibrary : classLibrary;
+      return name + "=" + value.replace(selectorName, (selector) => library.use(selector));
+    });
+
+export default html;

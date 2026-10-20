@@ -1,27 +1,19 @@
-/**
- * Removes all CSS declarations in the library which are unused.
- * This doesn't get anything with a secondary selector. Help my regex!
- *
- * @param file
- * @param classLibrary
- * @returns {*}
- */
-export default function(file, classLibrary) {
-  classLibrary.getUnused().forEach(function(selector) {
-    const expression = new RegExp("[,?\\s*]\\." + selector + "\\s*{[^}]*}", "g");
-    file = file.replace(expression, function(match) {
-      if (match[0] !== ",") {
-        // remove declaration
-        return "";
-      } else {
-        // only remove selector
-        const subExpression = new RegExp("[,?\\s*]\\." + selector);
-        return match.replace(subExpression, function() {
-          return "";
-        });
-      }
-    });
-  });
+import type { Processor } from "../config.ts";
 
-  return file;
-}
+/**
+ * Removes the CSS rules of class shortnames that were declared but never used. Run it on CSS that the
+ * css processor already reduced. This doesn't get anything with a secondary selector. Help my regex!
+ */
+const removeUnused: Processor = (file, classLibrary) => {
+  let output = file;
+  for (const selector of classLibrary.getUnused()) {
+    const rule = new RegExp(String.raw`[,?\s*]\.` + selector + String.raw`\s*{[^}]*}`, "g");
+    output = output.replace(rule, (match) =>
+      // in a selector list only remove the selector, otherwise the whole declaration
+      match.startsWith(",") ? match.replace(new RegExp(String.raw`[,?\s*]\.` + selector), "") : "",
+    );
+  }
+  return output;
+};
+
+export default removeUnused;

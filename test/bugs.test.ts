@@ -57,7 +57,7 @@ describe("html", () => {
 });
 
 describe("library", () => {
-  test.fails("#7 handles names that exist on Object.prototype", () => {
+  test("#7 handles names that exist on Object.prototype", () => {
     const { cl, il } = fresh();
     expect(css(".constructor{a:b}\n.toString{a:b}\n.normal{a:b}", cl, il)).toBe(".a{a:b}\n.b{a:b}\n.c{a:b}");
   });
@@ -108,7 +108,7 @@ describe("js-strings", () => {
 });
 
 describe("config", () => {
-  test.fails("#11 resolves a config path relative to the project root", () => {
+  test("#11 resolves a config path relative to the project root", () => {
     const instance = new ShorterCSS("test/fixtures/shortercss.config.cjs");
     expect(instance.ignores).toEqual({ classes: ["keep-*"], ids: ["app"] });
   });

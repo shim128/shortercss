@@ -1,9 +1,43 @@
 {
   "name": "shortercss",
-  "description": "An Open Source Solution for shortening/obfuscating CSS selectors",
   "version": "2.1.2",
-  "main": "./dist/index.js",
-  "types": "index.d.ts",
+  "description": "An Open Source Solution for shortening/obfuscating CSS selectors",
+  "keywords": [
+    "class-names",
+    "compress",
+    "css",
+    "minify",
+    "obfuscate",
+    "selectors",
+    "styles"
+  ],
+  "homepage": "https://github.com/shim128/shortercss",
+  "bugs": "https://github.com/shim128/shortercss/issues",
+  "license": "MIT",
+  "author": {
+    "name": "Matb85"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shim128/shortercss.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./processors/*": {
+      "types": "./dist/processors/*.d.ts",
+      "default": "./dist/processors/*.js"
+    },
+    "./dist/processors/*": "./dist/processors/*",
+    "./package.json": "./package.json"
+  },
   "scripts": {
     "build": "vp pack",
     "check": "vp check",
@@ -11,12 +45,8 @@
     "test": "vp test",
     "coverage": "vp test --coverage",
     "release": "commit-and-tag-version",
-    "prepack": "vp pack"
-  },
-  "dependencies": {
-    "app-root-path": "^3.1.0",
-    "lodash": "~4.18.1",
-    "multimatch": "^8.0.0"
+    "prepack": "vp pack",
+    "test:dist": "node test/compat/smoke.cjs && node test/compat/smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
@@ -26,23 +56,8 @@
     "typescript": "^7.0.2",
     "vite-plus": "1.3.0"
   },
-  "author": {
-    "name": "Matb85"
+  "engines": {
+    "node": ">=22.12"
   },
-  "homepage": "https://github.com/shim128/shortercss",
-  "bugs": "https://github.com/shim128/shortercss/issues",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shim128/shortercss.git"
-  },
-  "keywords": [
-    "css",
-    "selectors",
-    "class-names",
-    "minify",
-    "obfuscate",
-    "compress",
-    "styles"
-  ],
-  "license": "MIT"
+  "packageManager": "pnpm@12.14.0"
 }
