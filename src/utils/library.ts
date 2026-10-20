@@ -6,18 +6,19 @@ interface Entry {
   hits: number;
 }
 
+/** Shortnames that ad blockers' generic cosmetic filters hide (`.ad`, `.ads`, …), so never generated. */
+const reserved: ReadonlySet<string> = new Set(["ad", "ads", "adv"]);
+
 /**
  * Maps full selector names to shortnames and counts how often each name is used outside stylesheets.
  * One library holds classes, another ids; share them across every file of a build.
  */
 export class Library {
   readonly #entries = new Map<string, Entry>();
-  readonly #ignores: readonly IgnorePattern[];
   readonly #isIgnored: (name: string) => boolean;
   #seed = 0;
 
   constructor(ignores: readonly IgnorePattern[] = []) {
-    this.#ignores = ignores;
     this.#isIgnored = compileIgnores(ignores);
   }
 
@@ -53,9 +54,9 @@ export class Library {
       .map((entry) => entry.shortname);
   }
 
-  /** Number of shortnames generated so far, including ones skipped because they are ignored. */
+  /** Number of entries in the library. */
   getSize(): number {
-    return this.#seed;
+    return this.#entries.size;
   }
 
   get size(): number {
@@ -79,9 +80,10 @@ export class Library {
     }
     if (this.#isIgnored(name)) return name;
 
+    // A shortname that an ignore pattern matches could collide with a kept name, e.g. "ab" for `a*`.
     let shortname: string;
     do shortname = generateShortname(this.#seed++);
-    while (this.#ignores.includes(shortname));
+    while (reserved.has(shortname) || this.#isIgnored(shortname));
     this.#entries.set(name, { shortname, hits: counts ? 1 : 0 });
     return shortname;
   }

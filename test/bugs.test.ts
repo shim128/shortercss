@@ -97,13 +97,13 @@ describe("library", () => {
     expect(css(".constructor{a:b}\n.toString{a:b}\n.normal{a:b}", cl, il)).toBe(".a{a:b}\n.b{a:b}\n.c{a:b}");
   });
 
-  test.fails("#8 never generates a shortname that an ignore pattern keeps", () => {
+  test("#8 never generates a shortname that an ignore pattern keeps", () => {
     const { cl, il } = fresh({ classes: ["a*"] });
     expect(css(".foo{x:y}\n.ab{x:y}\n.bar{x:y}", cl, il)).toBe(".b{x:y}\n.ab{x:y}\n.c{x:y}");
     expect(cl.getSize()).toBe(2);
   });
 
-  test.fails("#12 never emits ad-blocker-prone shortnames", () => {
+  test("#12 never emits ad-blocker-prone shortnames", () => {
     const { cl } = fresh();
     const names = Array.from({ length: 1000 }, (_, i) => cl.get(`c${i}`, true));
     expect(names.filter((name) => ["ad", "ads", "adv"].includes(name))).toEqual([]);
