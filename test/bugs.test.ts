@@ -39,14 +39,14 @@ describe("css", () => {
 });
 
 describe("html", () => {
-  test.fails("#3 does not re-process script content with the attribute pass", () => {
+  test("#3 does not re-process script content with the attribute pass", () => {
     const { cl, il } = fresh();
     expect(html('<div id="foo"></div><script>el.id = "foo";</script>', cl, il)).toBe(
       '<div id="a"></div><script>el.id = "a";</script>',
     );
   });
 
-  test.fails("#4 maps id references (aria-*, href fragments) with the id library", () => {
+  test("#4 maps id references (aria-*, href fragments) with the id library", () => {
     const { cl, il } = fresh();
     css(".x{a:b}\n.y{a:b}", cl, il);
     expect(html('<h2 id="title"></h2><div aria-labelledby="title"></div>', cl, il)).toBe(
@@ -57,16 +57,37 @@ describe("html", () => {
     );
   });
 
-  test.fails("#5 ignores attributes that only end in class/id/for", () => {
+  test("#5 ignores attributes that only end in class/id/for", () => {
     const { cl, il } = fresh();
     expect(html('<div data-id="user-42" class="card"></div>', cl, il)).toBe('<div data-id="user-42" class="a"></div>');
   });
 
-  test.fails("#6 processes every script block, with or without attributes", () => {
+  test("#6 processes every script block, with or without attributes", () => {
     const { cl, il } = fresh();
     expect(
       html('<script>a.getElementById("one")</script><script type="module">a.getElementById("two")</script>', cl, il),
     ).toBe('<script>a.getElementById("a")</script><script type="module">a.getElementById("b")</script>');
+  });
+
+  test.each([
+    ["<div class=card id=main></div>", "<div class=a id=a></div>"],
+    ['<div title="a > b" class="card"></div>', '<div title="a > b" class="a"></div>'],
+    [
+      '<style media="screen">.card { x: y; }</style><p CLASS="card">',
+      '<style media="screen">.a { x: y; }</style><p CLASS="a">',
+    ],
+    [
+      '<a href="https://example.com/#intro">x</a><a href="#">top</a>',
+      '<a href="https://example.com/#intro">x</a><a href="#">top</a>',
+    ],
+    ['<p>Set id="foo" in the markup</p>', '<p>Set id="foo" in the markup</p>'],
+    [
+      '<td headers="a-col b-row"></td><svg><use xlink:href="#icon"/></svg>',
+      '<td headers="a b"></td><svg><use xlink:href="#c"/></svg>',
+    ],
+  ])("#5 only rewrites class names and id references in start tags: %s", (input, output) => {
+    const { cl, il } = fresh();
+    expect(html(input, cl, il)).toBe(output);
   });
 });
 

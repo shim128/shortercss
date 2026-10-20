@@ -29,13 +29,24 @@ export const idSelector: RegExp = stylesheetSelector("#");
 /** An id reference in `url(#id)`, e.g. an SVG gradient or filter: `url(#` is group 1, the id group 2. */
 export const urlIdReference: RegExp = /(url\(\s*["']?#)(-?[_a-zA-Z][\w-]*)/g;
 
+/** The body of every `<script>` and `<style>` element, whatever its attributes. */
+export const scriptBody: RegExp = /(?<=<script\b[^>]*>)[\s\S]*?(?=<\/script\s*>)/gi;
+export const styleBody: RegExp = /(?<=<style\b[^>]*>)[\s\S]*?(?=<\/style\s*>)/gi;
+
+/** An HTML start tag with attributes. Quoted attribute values may contain `>`. */
+export const startTag: RegExp = /<[a-zA-Z][^\s/>]*\s(?:[^>"']|"[^"]*"|'[^']*')*>/g;
+
 /**
- * HTML class, id, for and aria-labelledby attributes, with or without spaces around `=`.
+ * An attribute inside a start tag, with or without spaces around `=`: the name is group 1, ` = ` group 2,
+ * and the value, quoted or not, group 3.
  *
- * Should match: `class="selector"`, `class="selector selector"`, `id="selector"`, `for="selector"`.
- * Shouldn't match: `name="selector"`, `href="selector"`.
+ * Should match: `class="selector selector"`, `id='selector'`, `for=selector`.
+ * Shouldn't match: `disabled`, the `id` in `data-id="selector"`.
  */
-export const elementAttribute: RegExp = /(class|id|for|aria-labelledby)\s*=\s*["'](-*_*[\w\s])+["']/g;
+export const tagAttribute: RegExp = /(?<=\s)([^\s"'<>/=]+)(\s*=\s*)("[^"]*"|'[^']*'|[^\s"'=<>`]+)/g;
+
+/** A same-document link, `#id` with or without quotes: `"#` is group 1, the id group 2. */
+export const fragmentLink: RegExp = /^(["']?#)(-?[_a-zA-Z][\w-]*)(?=["']?$)/;
 
 /** A single id passed to `.getElementById(` or assigned to `.id =`. */
 export const idList: RegExp = /\.(getElementById|id)\s*?[(|=]\s*?(["'])(-*_*[\w\s])+/g;
