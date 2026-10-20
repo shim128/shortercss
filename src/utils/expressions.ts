@@ -1,7 +1,12 @@
 // Test these live on https://regex101.com/ to make your life easier.
 
-function stylesheetSelector(sigil: RegExp): RegExp {
-  return new RegExp(/(?<!:\s*)/.source + sigil.source + /(-*_*[\w])+(?!(.)*;)/.source, "gi");
+/** CSS comments and quoted strings, which {@link mask} hides before selectors are replaced. */
+export const cssCommentsAndStrings: RegExp = /\/\*[\s\S]*?\*\/|"(?:\\[\s\S]|[^"\\\n])*"|'(?:\\[\s\S]|[^'\\\n])*'/g;
+
+// A selector is followed by `{` before any `;` or `}`, so declaration values (`url(a.png)`, `.5em`, `#fff`)
+// never match, and it isn't part of an at-rule prelude (`@media (min-width: 40.5em)`, `@layer a.b`).
+function stylesheetSelector(sigil: string): RegExp {
+  return new RegExp(String.raw`(?<!@[^{};]*)` + sigil + String.raw`(-?[_a-zA-Z][\w-]*)(?=[^{};]*\{)`, "g");
 }
 
 /**
@@ -13,13 +18,16 @@ function stylesheetSelector(sigil: RegExp): RegExp {
 export const selectorName: RegExp = /(-?[_a-zA-Z]+[_\w-]*)/g;
 
 /**
- * Class and id selectors defined in a stylesheet.
+ * Class and id selectors defined in a stylesheet, minified or not, nested or not. The name is group 1.
  *
- * Should match: `.selector`, `#selector`.
- * Shouldn't match: `#e6e6e6;`, `body`, `#666`, `:pseudo`.
+ * Should match: `.selector {`, `#selector{`, `a > .selector:hover,`, `:is(.selector) {`, `&.selector {`.
+ * Shouldn't match: `color: #e6e6e6;`, `margin: 0 .5em}`, `url(img/bg.png)}`, `@media (min-width: 40.5em) {`.
  */
-export const classSelector: RegExp = stylesheetSelector(/\./);
-export const idSelector: RegExp = stylesheetSelector(/#/);
+export const classSelector: RegExp = stylesheetSelector(String.raw`\.`);
+export const idSelector: RegExp = stylesheetSelector("#");
+
+/** An id reference in `url(#id)`, e.g. an SVG gradient or filter: `url(#` is group 1, the id group 2. */
+export const urlIdReference: RegExp = /(url\(\s*["']?#)(-?[_a-zA-Z][\w-]*)/g;
 
 /**
  * HTML class, id, for and aria-labelledby attributes, with or without spaces around `=`.

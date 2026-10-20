@@ -5,22 +5,36 @@ import { fresh } from "./helpers.ts";
 import { css, html, jsStrings, removeUnused, ShorterCSS } from "./impl.ts";
 
 describe("css", () => {
-  test.fails("#1 renames selectors in minified CSS", () => {
+  test("#1 renames selectors in minified CSS", () => {
     const { cl, il } = fresh();
     expect(css(".alpha{color:red;}.beta{color:blue;}", cl, il)).toBe(".a{color:red;}.b{color:blue;}");
   });
 
-  test.fails("#2 leaves declaration values alone", () => {
+  test("#2 leaves declaration values alone", () => {
     const { cl, il } = fresh();
     expect(css(".hero{background:url(img/bg.png)}", cl, il)).toBe(".a{background:url(img/bg.png)}");
     expect(css(".box{margin:0 .5em}", cl, il)).toBe(".b{margin:0 .5em}");
   });
 
-  test.fails("#2 maps url(#id) references to the id library", () => {
+  test("#2 maps url(#id) references to the id library", () => {
     const { cl, il } = fresh();
     const out = html('<svg><linearGradient id="grad"></linearGradient></svg>', cl, il);
     expect(css(".shape{fill:url(#grad);}", cl, il)).toBe(".a{fill:url(#a);}");
+    expect(css('.mask{mask:url("#grad")}', cl, il)).toBe('.b{mask:url("#a")}');
     expect(out).toBe('<svg><linearGradient id="a"></linearGradient></svg>');
+  });
+
+  test.each([
+    ["@media (min-width:40.5em){.alpha{x:y}}", "@media (min-width:40.5em){.a{x:y}}"],
+    ["@layer base.components{.alpha{x:y}}", "@layer base.components{.a{x:y}}"],
+    [".alpha{background:url(a.png);.beta{x:y}&.gamma{x:y}}", ".a{background:url(a.png);.b{x:y}&.c{x:y}}"],
+    [":is(.alpha,.beta) > #main:not(.gamma){x:y}", ":is(.a,.b) > #a:not(.c){x:y}"],
+    ['a[href$=".pdf"]{x:y} /* .comment { */ .alpha{x:y}', 'a[href$=".pdf"]{x:y} /* .comment { */ .a{x:y}'],
+    ['.alpha{content:".fake{"}', '.a{content:".fake{"}'],
+    ["#fff{x:y}.alpha{color:#fff}", "#a{x:y}.a{color:#fff}"],
+  ])("#2 only renames selectors: %s", (input, output) => {
+    const { cl, il } = fresh();
+    expect(css(input, cl, il)).toBe(output);
   });
 });
 
