@@ -1,6 +1,6 @@
 // Regression tests for the bugs found in the 2.1.2 review. Each asserts the correct behavior and stays
 // `test.fails` until fixed, then becomes a plain `test`.
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { fresh } from "./helpers.ts";
 import { css, html, jsStrings, removeUnused, ShorterCSS } from "./impl.ts";
 

@@ -1,6 +1,6 @@
 // Characterization of the 2.1.2 behavior on inputs it handles correctly. Refactors must keep these
 // snapshots byte-identical; intentional behavior changes update them in a reviewed commit.
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "vite-plus/test";
 import { fixture, fresh, mapping } from "./helpers.ts";
 import { css, html, jsStrings, removeUnused, ShorterCSS } from "./impl.ts";
 
