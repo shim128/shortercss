@@ -1,5 +1,6 @@
 import type { Processor } from "../config.ts";
-import { fragmentLink, scriptBody, selectorName, startTag, styleBody, tagAttribute } from "../utils/expressions.ts";
+import { fragmentLink, scriptBody, startTag, styleBody, tagAttribute } from "../utils/expressions.ts";
+import { mapNames } from "../utils/map-names.ts";
 import { mask } from "../utils/mask.ts";
 import css from "./css.ts";
 import jsStrings from "./js-strings.ts";
@@ -38,9 +39,9 @@ const html: Processor = (file, classLibrary, idLibrary) => {
     tag.replace(tagAttribute, (attribute, name: string, assign: string, value: string) => {
       switch (attributeTargets.get(name.toLowerCase())) {
         case "class":
-          return name + assign + value.replace(selectorName, (selector) => classLibrary.use(selector));
+          return name + assign + mapNames(value, classLibrary);
         case "id":
-          return name + assign + value.replace(selectorName, (selector) => idLibrary.use(selector));
+          return name + assign + mapNames(value, idLibrary);
         case "fragment":
           return name + assign + value.replace(fragmentLink, (_, hash: string, id: string) => hash + idLibrary.use(id));
         default:

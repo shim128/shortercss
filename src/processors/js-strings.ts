@@ -1,18 +1,13 @@
 import type { Processor } from "../config.ts";
-import type { LibraryInstance } from "../utils/library.ts";
 import {
   classListCall,
   classString,
   idString,
   prefixedSelector,
-  selectorName,
   selectorString,
   stringLiteral,
 } from "../utils/expressions.ts";
-
-function mapNames(value: string, library: LibraryInstance): string {
-  return value.replace(selectorName, (name) => library.use(name));
-}
+import { mapNames } from "../utils/map-names.ts";
 
 /**
  * Dumb search for selector strings passed to DOM methods and properties. This only works on libraries

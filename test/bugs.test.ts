@@ -1,5 +1,5 @@
-// Regression tests for the bugs found in the 2.1.2 review, numbered as in the review. Each was written as
-// `test.fails` against 2.1.2 first, then became a plain `test` with its fix.
+// Regression tests, numbered: #1–#13 are the bugs found in the 2.1.2 review, later ones continue the count. Each
+// was written as `test.fails` against the code before its fix first, then became a plain `test` with the fix.
 import { describe, expect, test } from "vite-plus/test";
 import { fresh } from "./helpers.ts";
 import { css, html, jsStrings, removeUnused, ShorterCSS } from "./impl.ts";
@@ -180,5 +180,39 @@ describe("config", () => {
   test("#11 resolves a config path relative to the project root", () => {
     const instance = new ShorterCSS("test/fixtures/shortercss.config.cjs");
     expect(instance.ignores).toEqual({ classes: ["keep-*"], ids: ["app"] });
+  });
+});
+
+// A name the expressions can't match whole was renamed in part: `.md\:flex` became `.a\:flex` while
+// class="md:flex" became "a:b", so the element lost its styles.
+describe("escaped and non-ASCII names", () => {
+  test("#14 css leaves selectors with escapes or non-ASCII characters alone", () => {
+    const { cl, il } = fresh();
+    expect(
+      css(
+        ".md\\:flex{x:y}.flex{x:y}.w-1\\/2{x:y}.ab-привет{x:y}.привет{x:y}#nav\\:top{x:y}.shape{fill:url(#grad\\:1)}",
+        cl,
+        il,
+      ),
+    ).toBe(".md\\:flex{x:y}.a{x:y}.w-1\\/2{x:y}.ab-привет{x:y}.привет{x:y}#nav\\:top{x:y}.b{fill:url(#grad\\:1)}");
+  });
+
+  test("#14 html maps only class and id tokens that are plain names", () => {
+    const { cl, il } = fresh();
+    css(".flex{x:y}", cl, il);
+    expect(html('<div class="md:flex flex w-1/2 ab-привет 2col" id="user:42"><label for="user:42">', cl, il)).toBe(
+      '<div class="md:flex a w-1/2 ab-привет 2col" id="user:42"><label for="user:42">',
+    );
+  });
+
+  test("#14 jsStrings maps only plain names", () => {
+    const { cl, il } = fresh();
+    css(".flex{x:y}", cl, il);
+    expect(jsStrings('el.className = "md:flex flex"; el.classList.add("ab-привет", "flex")', cl, il)).toBe(
+      'el.className = "md:flex a"; el.classList.add("ab-привет", "a")',
+    );
+    expect(jsStrings('document.querySelector(".md\\\\:flex .flex")', cl, il)).toBe(
+      'document.querySelector(".md\\\\:flex .a")',
+    );
   });
 });

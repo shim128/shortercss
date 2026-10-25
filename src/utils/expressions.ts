@@ -3,19 +3,30 @@
 /** CSS comments and quoted strings, which {@link mask} hides before selectors are replaced. */
 export const cssCommentsAndStrings: RegExp = /\/\*[\s\S]*?\*\/|"(?:\\[\s\S]|[^"\\\n])*"|'(?:\\[\s\S]|[^'\\\n])*'/g;
 
+// A name ends where nothing can continue it. An escape (`.md\:flex`) or a non-ASCII character makes it part of a
+// longer name that these expressions can't match whole, so such names are left alone rather than renamed in part.
+// Forbidding `[\w-]` too keeps backtracking from matching a shorter name.
+const nameEnd = String.raw`(?![\w\\-]|[^\x00-\x7F])`;
+
 // A selector is followed by `{` before any `;` or `}`, so declaration values (`url(a.png)`, `.5em`, `#fff`)
 // never match, and it isn't part of an at-rule prelude (`@media (min-width: 40.5em)`, `@layer a.b`).
 function stylesheetSelector(sigil: string): RegExp {
-  return new RegExp(String.raw`(?<!@[^{};]*)` + sigil + String.raw`(-?[_a-zA-Z][\w-]*)(?=[^{};]*\{)`, "g");
+  return new RegExp(
+    String.raw`(?<!@[^{};]*)` + sigil + String.raw`(-?[_a-zA-Z][\w-]*)` + nameEnd + String.raw`(?=[^{};]*\{)`,
+    "g",
+  );
 }
 
 /**
- * Extracts the selector names to shorten from a match of one of the expressions below.
+ * A selector name that can be shortened, as a whole token of a class or id-reference list.
  *
  * Should match: `selector`, `-selector`, `_selector`, `selector0`.
- * Shouldn't match: `3selector`, `:selector`.
+ * Shouldn't match: `3selector`, `:selector`, `md:flex`, `ab-привет`.
  */
-export const selectorName: RegExp = /(-?[_a-zA-Z]+[_\w-]*)/g;
+export const plainName: RegExp = /^-?[_a-zA-Z][\w-]*$/;
+
+/** A whitespace-separated token of a class or id-reference list, inside or outside quotes. */
+export const listToken: RegExp = /[^\s"']+/g;
 
 /**
  * Class and id selectors defined in a stylesheet, minified or not, nested or not. The name is group 1.
@@ -27,7 +38,7 @@ export const classSelector: RegExp = stylesheetSelector(String.raw`\.`);
 export const idSelector: RegExp = stylesheetSelector("#");
 
 /** An id reference in `url(#id)`, e.g. an SVG gradient or filter: `url(#` is group 1, the id group 2. */
-export const urlIdReference: RegExp = /(url\(\s*["']?#)(-?[_a-zA-Z][\w-]*)/g;
+export const urlIdReference: RegExp = new RegExp(String.raw`(url\(\s*["']?#)(-?[_a-zA-Z][\w-]*)` + nameEnd, "g");
 
 /** The body of every `<script>` and `<style>` element, whatever its attributes. */
 export const scriptBody: RegExp = /(?<=<script\b[^>]*>)[\s\S]*?(?=<\/script\s*>)/gi;
@@ -73,4 +84,4 @@ export const selectorString: RegExp =
  * A class or id in a selector string: the sigil is group 1, the name group 2. Attribute selectors such
  * as `[href$=".pdf"]` match as a whole, without groups, so that they can be skipped.
  */
-export const prefixedSelector: RegExp = /\[[^\]]*\]|([.#])(-?[_a-zA-Z][\w-]*)/g;
+export const prefixedSelector: RegExp = new RegExp(String.raw`\[[^\]]*\]|([.#])(-?[_a-zA-Z][\w-]*)` + nameEnd, "g");

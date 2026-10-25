@@ -116,9 +116,9 @@ blockers hide.
 ### Limitations
 
 The built-in processors are regex-based and don't parse JavaScript or HTML. They don't follow names built at
-runtime (string concatenation, template literals) or set with `setAttribute`, and don't handle escaped class
-names such as Tailwind's `.md\:flex`, non-ASCII names, or selectors inside `@scope` and `@supports selector()`
-preludes.
+runtime (string concatenation, template literals) or set with `setAttribute`, or selectors inside `@scope` and
+`@supports selector()` preludes. Names with escapes, such as Tailwind's `.md\:flex`, and non-ASCII names are left
+as they are in stylesheets, markup and scripts alike, so they keep working but aren't shortened.
 
 ## Migrating from 2.x
 
