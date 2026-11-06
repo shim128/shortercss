@@ -29,8 +29,11 @@ function stylesheetSelector(sigil: string): RegExp {
  */
 export const plainName: RegExp = /^-?[_a-zA-Z][\w-]*$/;
 
-/** A whitespace-separated token of a class or id-reference list, inside or outside quotes. */
-export const listToken: RegExp = /[^\s"']+/g;
+/**
+ * A whitespace-separated token of a class or id-reference list. Quotes around it aren't part of it, so that it also
+ * works on an attribute value with its quotes, but quotes inside it are.
+ */
+export const listToken: RegExp = /[^\s"'](?:\S*[^\s"'])?/g;
 
 /**
  * Class and id selectors defined in a stylesheet, minified or not, nested or not. The name is group 1.

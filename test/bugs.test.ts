@@ -259,6 +259,21 @@ describe("escaped and non-ASCII names", () => {
       'document.querySelector(".md\\\\:flex .a")',
     );
   });
+
+  // A quote ended a token, so `it's` was two names: `class="it's"` became `class="a'b"`.
+  test("#16 html treats a quote inside a name as part of it", () => {
+    const { cl, il } = fresh();
+    css(".card{x:y}", cl, il);
+    expect(html(`<p class="it's card" id='say"hi'>`, cl, il)).toBe(`<p class="it's a" id='say"hi'>`);
+  });
+
+  test("#16 jsStrings treats an escaped quote inside a name as part of it", () => {
+    const { cl, il } = fresh();
+    css(".card{x:y}", cl, il);
+    expect(jsStrings(`el.id = 'it\\'s'`, cl, il)).toBe(`el.id = 'it\\'s'`);
+    expect(jsStrings(`el.className = "a\\"b card"`, cl, il)).toBe(`el.className = "a\\"b a"`);
+    expect(jsStrings(`el.classList.add("x\\"y", "card")`, cl, il)).toBe(`el.classList.add("x\\"y", "a")`);
+  });
 });
 
 // A backslash escapes a whole CRLF, but only its CR was consumed, so the string wasn't masked: its contents were
