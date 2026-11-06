@@ -1,8 +1,8 @@
-// Regression tests for the bugs found in the 2.1.2 review, numbered as in the review. Each was written as
-// `test.fails` against 2.1.2 first, then became a plain `test` with its fix.
+// Regression tests, numbered: #1–#13 are the bugs found in the 2.1.2 review, later ones continue the count. Each
+// was written as `test.fails` against the code before its fix first, then became a plain `test` with the fix.
 import { describe, expect, test } from "vite-plus/test";
+import ShorterCSS, { css, html, jsStrings, removeUnused } from "../src/index.ts";
 import { fresh } from "./helpers.ts";
-import { css, html, jsStrings, removeUnused, ShorterCSS } from "./impl.ts";
 
 describe("css", () => {
   test("#1 renames selectors in minified CSS", () => {
@@ -57,6 +57,27 @@ describe("html", () => {
     );
   });
 
+  // Listed by hand, as the README does: reading them from the processor would pass with an entry deleted.
+  test.each([
+    "for",
+    "form",
+    "list",
+    "headers",
+    "popovertarget",
+    "commandfor",
+    "aria-activedescendant",
+    "aria-controls",
+    "aria-describedby",
+    "aria-details",
+    "aria-errormessage",
+    "aria-flowto",
+    "aria-labelledby",
+    "aria-owns",
+  ])("#4 maps the id reference in %s", (attribute) => {
+    const { cl, il } = fresh();
+    expect(html(`<x ${attribute}="some-id">`, cl, il)).toBe(`<x ${attribute}="a">`);
+  });
+
   test("#5 ignores attributes that only end in class/id/for", () => {
     const { cl, il } = fresh();
     expect(html('<div data-id="user-42" class="card"></div>', cl, il)).toBe('<div data-id="user-42" class="a"></div>');
@@ -105,7 +126,7 @@ describe("library", () => {
 
   test("#12 never emits ad-blocker-prone shortnames", () => {
     const { cl } = fresh();
-    const names = Array.from({ length: 1000 }, (_, i) => cl.get(`c${i}`, true));
+    const names = Array.from({ length: 1000 }, (_, i) => cl.declare(`c${i}`));
     expect(names.filter((name) => ["ad", "ads", "adv"].includes(name))).toEqual([]);
   });
 });
@@ -116,6 +137,29 @@ describe("remove-unused", () => {
     const out = css(".keep, .drop {margin:0}\n.drop2 {x:y}", cl, il);
     html('<div class="keep"></div>', cl, il);
     expect(removeUnused(out, cl, il).replace(/\s+/g, " ").trim()).toBe(".a {margin:0}");
+  });
+
+  test("#9 returns the file unchanged when every class is used", () => {
+    const { cl, il } = fresh();
+    const reduced = css("/* license */\n.keep {x:y}\n", cl, il);
+    html('<div class="keep"></div>', cl, il);
+    expect(removeUnused(reduced, cl, il)).toBe(reduced);
+  });
+
+  // `.drop` shortens to `b`, so `base.b` reads like a use of it: only the at-rule check keeps this rule.
+  test("#9 leaves at-rules alone, whatever their prelude looks like", () => {
+    const { cl, il } = fresh();
+    const reduced = css(".keep{x:y}.drop{x:y}@layer base.b{}", cl, il);
+    html('<div class="keep"></div>', cl, il);
+    expect(removeUnused(reduced, cl, il)).toBe(".a{x:y}@layer base.b{}");
+  });
+
+  // Needs an unused class: with none, the processor returns early and never looks at the ids.
+  test("#9 only removes classes, never ids", () => {
+    const { cl, il } = fresh();
+    const reduced = css("#lonely{x:y}.drop{x:y}.keep{x:y}", cl, il);
+    html('<div class="keep"></div>', cl, il);
+    expect(removeUnused(reduced, cl, il)).toBe("#a{x:y}.b{x:y}");
   });
 
   // `keep`, `keep2` and `used` are used in markup; `drop` isn't.
@@ -180,5 +224,66 @@ describe("config", () => {
   test("#11 resolves a config path relative to the project root", () => {
     const instance = new ShorterCSS("test/fixtures/shortercss.config.cjs");
     expect(instance.ignores).toEqual({ classes: ["keep-*"], ids: ["app"] });
+  });
+});
+
+// A name the expressions can't match whole was renamed in part: `.md\:flex` became `.a\:flex` while
+// class="md:flex" became "a:b", so the element lost its styles.
+describe("escaped and non-ASCII names", () => {
+  test("#14 css leaves selectors with escapes or non-ASCII characters alone", () => {
+    const { cl, il } = fresh();
+    expect(
+      css(
+        ".md\\:flex{x:y}.flex{x:y}.w-1\\/2{x:y}.ab-привет{x:y}.привет{x:y}#nav\\:top{x:y}.shape{fill:url(#grad\\:1)}",
+        cl,
+        il,
+      ),
+    ).toBe(".md\\:flex{x:y}.a{x:y}.w-1\\/2{x:y}.ab-привет{x:y}.привет{x:y}#nav\\:top{x:y}.b{fill:url(#grad\\:1)}");
+  });
+
+  test("#14 html maps only class and id tokens that are plain names", () => {
+    const { cl, il } = fresh();
+    css(".flex{x:y}", cl, il);
+    expect(html('<div class="md:flex flex w-1/2 ab-привет 2col" id="user:42"><label for="user:42">', cl, il)).toBe(
+      '<div class="md:flex a w-1/2 ab-привет 2col" id="user:42"><label for="user:42">',
+    );
+  });
+
+  test("#14 jsStrings maps only plain names", () => {
+    const { cl, il } = fresh();
+    css(".flex{x:y}", cl, il);
+    expect(jsStrings('el.className = "md:flex flex"; el.classList.add("ab-привет", "flex")', cl, il)).toBe(
+      'el.className = "md:flex a"; el.classList.add("ab-привет", "a")',
+    );
+    expect(jsStrings('document.querySelector(".md\\\\:flex .flex")', cl, il)).toBe(
+      'document.querySelector(".md\\\\:flex .a")',
+    );
+  });
+
+  // A quote ended a token, so `it's` was two names: `class="it's"` became `class="a'b"`.
+  test("#16 html treats a quote inside a name as part of it", () => {
+    const { cl, il } = fresh();
+    css(".card{x:y}", cl, il);
+    expect(html(`<p class="it's card" id='say"hi'>`, cl, il)).toBe(`<p class="it's a" id='say"hi'>`);
+  });
+
+  test("#16 jsStrings treats an escaped quote inside a name as part of it", () => {
+    const { cl, il } = fresh();
+    css(".card{x:y}", cl, il);
+    expect(jsStrings(`el.id = 'it\\'s'`, cl, il)).toBe(`el.id = 'it\\'s'`);
+    expect(jsStrings(`el.className = "a\\"b card"`, cl, il)).toBe(`el.className = "a\\"b a"`);
+    expect(jsStrings(`el.classList.add("x\\"y", "card")`, cl, il)).toBe(`el.classList.add("x\\"y", "a")`);
+  });
+});
+
+// A backslash escapes a whole CRLF, but only its CR was consumed, so the string wasn't masked: its contents were
+// renamed, and every shortname after them shifted.
+describe("line endings", () => {
+  test("#15 keeps a string continued over a CRLF line break masked", () => {
+    const { cl, il } = fresh();
+    expect(css('.alpha::before{content:"x\\\r\n.fake{y"}.beta{x:y}', cl, il)).toBe(
+      '.a::before{content:"x\\\r\n.fake{y"}.b{x:y}',
+    );
+    expect(css(".gamma::before{content:'x\\\r\n#fake{y'}", cl, il)).toBe(".c::before{content:'x\\\r\n#fake{y'}");
   });
 });

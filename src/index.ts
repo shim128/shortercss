@@ -28,7 +28,7 @@ export default class ShorterCSS {
   }
 }
 
-// `require("shortercss")` returns the class itself (Node ≥ 22.12), as it did in 2.x.
+// `require("shortercss")` returns the class itself, as it did in 2.x.
 export { ShorterCSS as "module.exports" };
 
 export { defineConfig, loadConfig } from "./config.ts";

@@ -11,8 +11,6 @@ interface Rule {
   test(name: string): boolean;
 }
 
-const globSyntax = /[*?[\]{}]/;
-
 function toRule(pattern: IgnorePattern): Rule {
   if (typeof pattern !== "string") {
     // Drop stateful flags so repeated .test() calls don't depend on lastIndex.
@@ -21,8 +19,6 @@ function toRule(pattern: IgnorePattern): Rule {
   }
   const negated = pattern.startsWith("!");
   const glob = negated ? pattern.slice(1) : pattern;
-  // Plain names skip matchesGlob, which is still experimental before Node 22.20.
-  if (!globSyntax.test(glob)) return { negated, test: (name) => name === glob };
   return { negated, test: (name) => posix.matchesGlob(name, glob) };
 }
 

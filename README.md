@@ -19,8 +19,8 @@ _You're like: `.some-super-descriptive-selector-name {...}`, and it's like: `.a 
 
 ## Install
 
-Requires Node.js 22.12 or later. The package isn't published to npm (the `shortercss` name belongs to the
-original author); install a release tarball instead:
+Requires Node.js 26.13, the first Node 26 LTS, or later. The package isn't published to npm (the `shortercss`
+name belongs to the original author); install a release tarball instead:
 
 ```sh
 pnpm add -D https://github.com/shim128/shortercss/releases/download/v3.0.0/shortercss-3.0.0.tgz
@@ -51,7 +51,7 @@ const css = require("shortercss/processors/css").default;
 ### Config
 
 Pass a config object to the constructor, a path to a config file, or nothing to load
-`shortercss.config.{js,mjs,cjs,ts}` from the current working directory (`.ts` needs Node 22.18 or later):
+`shortercss.config.{js,mjs,cjs,ts}` from the current working directory:
 
 ```ts
 // shortercss.config.ts
@@ -93,6 +93,8 @@ type Processor = (file: string, classLibrary: LibraryInstance, idLibrary: Librar
 | `jsStrings`    | string literals passed to `getElementById`, `getElementsByClassName`, `querySelector(All)`, `closest`, `matches`, `classList.add/remove/toggle/contains/replace`, or assigned to `id`, `htmlFor`, `className`                                    |
 | `removeUnused` | removes selectors of classes that stylesheets declare but no markup or script uses, and rules left without selectors                                                                                                                             |
 
+Processors keep a file's line endings: CRLF input gives CRLF output.
+
 Inside a processor, get shortnames from the libraries (`Library`, exported from the package):
 
 ```ts
@@ -116,13 +118,15 @@ blockers hide.
 ### Limitations
 
 The built-in processors are regex-based and don't parse JavaScript or HTML. They don't follow names built at
-runtime (string concatenation, template literals) or set with `setAttribute`, and don't handle escaped class
-names such as Tailwind's `.md\:flex`, non-ASCII names, or selectors inside `@scope` and `@supports selector()`
-preludes.
+runtime (string concatenation, template literals) or set with `setAttribute`, or selectors inside `@scope` and
+`@supports selector()` preludes. Attribute selectors that name a class or id, such as `[class~="card"]` or
+`[id="main"]`, aren't rewritten and stop matching the renamed markup; add those names to `ignores`. Names with
+escapes, such as Tailwind's `.md\:flex`, and non-ASCII names are left as they are in stylesheets, markup and
+scripts alike, so they keep working but aren't shortened.
 
 ## Migrating from 2.x
 
-- Node.js 22.12 or later, and the package is an ES module. `require("shortercss")` still returns the class.
+- Node.js 26.13 or later, and the package is an ES module. `require("shortercss")` still returns the class.
 - Only `shortercss`, `shortercss/processors/*` and the 2.x `shortercss/dist/processors/*.js` paths can be
   imported. Import `Library` and the processors from the package root.
 - Config paths resolve from the current working directory instead of the project root found by
@@ -160,8 +164,8 @@ pnpm test:dist # the built package as CommonJS and ES module consumers
 pnpm release   # bump the version, update CHANGELOG.md and tag
 ```
 
-Developing needs Node.js 22.18, 24.11 or later for the Vite+ toolchain. Upgrade `vite-plus` and
-`@vitest/coverage-v8` together: the coverage provider must match the Vitest version that Vite+ bundles.
+Upgrade `vite-plus` and `@vitest/coverage-v8` together: the coverage provider must match the Vitest version that
+Vite+ bundles.
 
 [1]: https://www.typescriptlang.org/
 [2]: https://www.conventionalcommits.org/en/v1.0.0/

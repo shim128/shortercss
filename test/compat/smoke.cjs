@@ -8,8 +8,11 @@ assert.equal(typeof ShorterCSS, "function", "require('shortercss') returns the c
 // Deep imports documented in the 2.x README
 const css = require("shortercss/dist/processors/css.js").default;
 const html = require("shortercss/dist/processors/html.js").default;
-const jsStrings = require("shortercss/processors/js-strings").default;
+const jsStrings = require("shortercss/dist/processors/js-strings.js").default;
 for (const processor of [css, html, jsStrings]) assert.equal(typeof processor, "function");
+
+// The subpath added in 3.0 is the same module
+assert.equal(require("shortercss/processors/js-strings").default, jsStrings);
 
 // gulp-shortercss 2.1.4 compiled code: __importDefault(require("shortercss")).default, then extends it
 function importDefault(mod) {
