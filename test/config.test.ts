@@ -3,8 +3,6 @@ import { describe, expect, test } from "vite-plus/test";
 import { css, defineConfig, html, loadConfig } from "../src/index.ts";
 
 const fixtures = fileURLToPath(new URL("./fixtures/", import.meta.url));
-const nodeVersion = process.versions.node.split(".").map(Number);
-const hasTypeStripping = (nodeVersion[0] ?? 0) > 22 || (nodeVersion[0] === 22 && (nodeVersion[1] ?? 0) >= 18);
 
 describe("loadConfig", () => {
   test("finds shortercss.config.* in cwd", () => {
@@ -15,7 +13,7 @@ describe("loadConfig", () => {
     expect(loadConfig("config-esm/shortercss.config.js", fixtures).ignores).toEqual({ classes: ["from-esm"] });
   });
 
-  test.runIf(hasTypeStripping)("loads TypeScript configs", () => {
+  test("loads TypeScript configs", () => {
     expect(loadConfig("config-ts/shortercss.config.ts", fixtures).ignores).toEqual({ classes: ["from-ts"] });
   });
 

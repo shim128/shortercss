@@ -30,7 +30,7 @@ export function defineConfig<P extends Record<string, Processor>>(config: Config
 }
 
 // Synchronous so that the ShorterCSS constructor can stay synchronous. Loads CommonJS, ES modules
-// (require(esm), Node ≥ 22.12) and TypeScript files (type stripping, Node ≥ 22.18).
+// (require(esm)) and TypeScript files (type stripping).
 const load = createRequire(import.meta.url);
 
 const defaultFiles = ["shortercss.config.js", "shortercss.config.mjs", "shortercss.config.cjs", "shortercss.config.ts"];
