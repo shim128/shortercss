@@ -40,7 +40,8 @@ describe("defineConfig", () => {
     expect(defineConfig(config)).toBe(config);
   });
 
-  test("only accepts bindings for configured processors", () => {
+  // The @ts-expect-error is the real assertion: `pnpm typecheck` fails if the type accepts `scss`.
+  test("rejects bindings for unconfigured processors at compile time only", () => {
     const config = defineConfig({
       processors: { css },
       // @ts-expect-error -- `scss` is not a configured processor

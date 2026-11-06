@@ -31,6 +31,7 @@ describe("Library", () => {
     expect(library.use("used")).toBe("a");
     expect(library.getUnused()).toEqual(["b"]);
     expect(library.stats()).toEqual({ size: 2, unused: 1 });
+    expect(library.size).toBe(2);
   });
 
   test("get(name, dontCount) delegates to declare() and use()", () => {
@@ -52,6 +53,7 @@ describe("Library", () => {
 
   test("keeps ignored names: exact, glob, RegExp, with ordered negation", () => {
     const library = new Library(["exact", "js-*", /^is-/g, "!js-renamed"]);
+    // `is-open` twice: a /g RegExp that kept its lastIndex wouldn't match the second time.
     expect(["exact", "js-hook", "is-open", "is-open", "js-renamed"].map((name) => library.use(name))).toEqual([
       "exact",
       "js-hook",
@@ -64,5 +66,16 @@ describe("Library", () => {
 
   test("a negation alone doesn't ignore anything", () => {
     expect(new Library(["!foo"]).use("foo")).toBe("a");
+  });
+
+  test.each([
+    ["{is,has}-*", "has-open", "has-open"],
+    ["{is,has}-*", "was-open", "a"],
+    ["js-?", "js-a", "js-a"],
+    ["js-?", "js-ab", "a"],
+    ["[ab]-x", "b-x", "b-x"],
+    ["[ab]-x", "c-x", "a"],
+  ])("the ignore glob %s maps %s to %s", (glob, name, shortname) => {
+    expect(new Library([glob]).use(name)).toBe(shortname);
   });
 });
