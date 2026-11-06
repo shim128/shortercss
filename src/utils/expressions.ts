@@ -1,7 +1,11 @@
 // Test these live on https://regex101.com/ to make your life easier.
 
-/** CSS comments and quoted strings, which {@link mask} hides before selectors are replaced. */
-export const cssCommentsAndStrings: RegExp = /\/\*[\s\S]*?\*\/|"(?:\\[\s\S]|[^"\\\n])*"|'(?:\\[\s\S]|[^'\\\n])*'/g;
+/**
+ * CSS comments and quoted strings, which {@link mask} hides before selectors are replaced. A backslash in a string
+ * can escape a line break, and a CRLF is one line break.
+ */
+export const cssCommentsAndStrings: RegExp =
+  /\/\*[\s\S]*?\*\/|"(?:\\(?:\r\n|[\s\S])|[^"\\\n])*"|'(?:\\(?:\r\n|[\s\S])|[^'\\\n])*'/g;
 
 // A name ends where nothing can continue it. An escape (`.md\:flex`) or a non-ASCII character makes it part of a
 // longer name that these expressions can't match whole, so such names are left alone rather than renamed in part.

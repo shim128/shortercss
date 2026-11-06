@@ -260,3 +260,15 @@ describe("escaped and non-ASCII names", () => {
     );
   });
 });
+
+// A backslash escapes a whole CRLF, but only its CR was consumed, so the string wasn't masked: its contents were
+// renamed, and every shortname after them shifted.
+describe("line endings", () => {
+  test("#15 keeps a string continued over a CRLF line break masked", () => {
+    const { cl, il } = fresh();
+    expect(css('.alpha::before{content:"x\\\r\n.fake{y"}.beta{x:y}', cl, il)).toBe(
+      '.a::before{content:"x\\\r\n.fake{y"}.b{x:y}',
+    );
+    expect(css(".gamma::before{content:'x\\\r\n#fake{y'}", cl, il)).toBe(".c::before{content:'x\\\r\n#fake{y'}");
+  });
+});

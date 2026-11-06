@@ -93,6 +93,8 @@ type Processor = (file: string, classLibrary: LibraryInstance, idLibrary: Librar
 | `jsStrings`    | string literals passed to `getElementById`, `getElementsByClassName`, `querySelector(All)`, `closest`, `matches`, `classList.add/remove/toggle/contains/replace`, or assigned to `id`, `htmlFor`, `className`                                    |
 | `removeUnused` | removes selectors of classes that stylesheets declare but no markup or script uses, and rules left without selectors                                                                                                                             |
 
+Processors keep a file's line endings: CRLF input gives CRLF output.
+
 Inside a processor, get shortnames from the libraries (`Library`, exported from the package):
 
 ```ts
@@ -117,8 +119,10 @@ blockers hide.
 
 The built-in processors are regex-based and don't parse JavaScript or HTML. They don't follow names built at
 runtime (string concatenation, template literals) or set with `setAttribute`, or selectors inside `@scope` and
-`@supports selector()` preludes. Names with escapes, such as Tailwind's `.md\:flex`, and non-ASCII names are left
-as they are in stylesheets, markup and scripts alike, so they keep working but aren't shortened.
+`@supports selector()` preludes. Attribute selectors that name a class or id, such as `[class~="card"]` or
+`[id="main"]`, aren't rewritten and stop matching the renamed markup; add those names to `ignores`. Names with
+escapes, such as Tailwind's `.md\:flex`, and non-ASCII names are left as they are in stylesheets, markup and
+scripts alike, so they keep working but aren't shortened.
 
 ## Migrating from 2.x
 
